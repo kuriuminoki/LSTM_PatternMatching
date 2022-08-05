@@ -1,12 +1,15 @@
-from tensorflow.keras.layers import LSTM, Embedding, Dense, Bidirectional
 from tensorflow import keras
-from tensorflow.keras.preprocessing.text import Tokenizer
+from keras.preprocessing.text import Tokenizer
+from keras.layers import LSTM, Embedding, Dense, Bidirectional
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
+
+# from tensorflow.keras.layers import LSTM, Embedding, Dense, Bidirectional
+# from tensorflow.keras.preprocessing.text import Tokenizer
 
 
 # --Get vector
@@ -18,7 +21,8 @@ def vectorize(train_input, test_input):
     test_input_vec = vectorizer.texts_to_sequences(test_input)
     train_input_vec = keras.preprocessing.sequence.pad_sequences(train_input_vec, padding='post')
     test_input_vec = keras.preprocessing.sequence.pad_sequences(test_input_vec, padding='post')
-    return np.array(train_input_vec), np.array(test_input_vec), len(vectorizer.word_index) + 1
+    print(vectorizer.index_word)
+    return np.array(train_input_vec), np.array(test_input_vec), len(vectorizer.word_index) + 1, vectorizer
 
 
 class LSTMModel:

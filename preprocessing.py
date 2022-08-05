@@ -107,9 +107,9 @@ result_rules = list()
 
 
 # --Perform pattern matching and save the results
-def get_pattern(data):
+def get_pattern(data, vocabulary_path='tool/api/vocabulary_pome.txt', rule_dir='tool/api/rules_pome'):
     # count = 0
-    matcher = AspectMatcher()
+    matcher = AspectMatcher(vocabulary_path, rule_dir)
     for index in range(len(data.sentence)):
         result = matcher.identify_aspect(copy.copy(data.sentence[index]))
         if result['aspect'] == '':

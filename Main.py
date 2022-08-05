@@ -75,7 +75,7 @@ def separate_by_aspect(train_data, test_data, aspect_prediction, train_pattern_r
 # --For Cross validation
 FOLD = 5
 # --if I use amazon data, AMAZON is True
-AMAZON = True
+AMAZON = False
 
 
 # model = LSTMModelSP(x_train, y_train, x_test, y_test, train_pattern_result, test_pattern_result,
@@ -84,8 +84,8 @@ AMAZON = True
 # prediction = model.test(word_sum, len(labels), save_path + aspect + ".csv")
 
 
-def main():
-    save_dir = 'normal'
+def main(vocabulary_path, rule_dir, csv_name):
+    save_dir = 'kuriu'
     save_path = ''
     train_path = ''
     test_path = ''
@@ -121,20 +121,33 @@ def main():
 
     # --Get the result of Pattern-Matching.
     print('Conduct Pattern-Matching Now...')
-    train_pattern_result = preprocessing.get_pattern(copy.copy(train_data))
-    test_pattern_result = preprocessing.get_pattern(copy.copy(test_data))
+    # vocabulary = 'tool/api/vocabulary_kuriu_sim.txt'
+    # rule = 'tool/api/rules_kuriu'
+    train_pattern_result = preprocessing.get_pattern(copy.copy(train_data),
+                                                     vocabulary_path,
+                                                     rule_dir)
+    test_pattern_result = preprocessing.get_pattern(copy.copy(test_data),
+                                                    vocabulary_path,
+                                                    rule_dir)
 
     # --text_lower and normalize_number are not used in the previous study
     preprocessed_train_data = preprocessing.data_preprocessing(copy.deepcopy(train_data))
     preprocessed_test_data = preprocessing.data_preprocessing(copy.deepcopy(test_data))
 
     # vectorize
-    train_input_vec, test_input_vec, word_sum = vectorize(preprocessed_train_data["sentence"].tolist(),
-                                                          preprocessed_test_data["sentence"].tolist())
+    # print(len(preprocessed_train_data["sentence"].tolist()))
+    # print(preprocessed_train_data["sentence"].tolist())
+    train_input_vec, test_input_vec, word_sum, vectorizer = vectorize(preprocessed_train_data["sentence"].tolist(),
+                                                                      preprocessed_test_data["sentence"].tolist())
+    # print('{} * {}'.format(len(train_input_vec), len(train_input_vec[0])))
+    # print(train_input_vec)
 
     # ###### Aspect classification ######## #
+    result = []
     for aspect in aspects:
         print(aspect)
+        # if aspect != 'compatibility':
+        #     continue
         labels = ["none", aspect]
         # --create data
         x_train = copy.deepcopy(train_input_vec)
@@ -149,20 +162,28 @@ def main():
         #model = LSTMModel(x_train, y_train, x_test, y_test, fold=FOLD)
         model = LSTMModelSP(x_train, y_train, x_test, y_test, train_pattern_result, test_pattern_result,
                             None, None,
-                            aspects, fold=FOLD)
+                            aspects, FOLD, vectorizer)
         # over sampling
         #model.oversampling()
         # --Train
         model.train(word_sum, len(labels), save_path + aspect)
         # --Predicting test data
         # prediction = model.test(save_path + aspect + ".csv")
-        prediction = model.test(word_sum, len(labels), save_path + aspect + ".csv")
+        prediction, precision, recall = model.test(word_sum, len(labels), save_path + aspect + ".csv")
+        result.append(precision)
+        result.append(recall)
         prediction = get_prediction(prediction, labels)
         # --add result data
         push_result(result_data['aspect_prediction'], prediction)
         del model
-
         gc.collect()
+        print('{} is finished.'.format(aspect))
+
+    with open(csv_name, "w", encoding='utf-8') as f:
+        for r in result:
+            f.write('{},'.format(r))
+
+    return
 
     # #### data split #### #
     # --remove the data which is predicted as "none"
@@ -202,5 +223,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main("tool/api/vocabulary_kuriu_or.txt", "tool/api/rules_kuriu", "result_or.csv")
+    main("tool/api/vocabulary_kuriu_and.txt", "tool/api/rules_kuriu", "result_and.csv")
+    main("tool/api/vocabulary_kuriu_score.txt", "tool/api/rules_kuriu", "result_score.csv")
+    main("tool/api/vocabulary_kuriu_sim.txt", "tool/api/rules_kuriu", "result_sim.csv")
 
